@@ -12,7 +12,7 @@ provider "aws" {
 module "aws_creds" {
   source = "../.."
 
-  name = "aws-tf-demo-creds"
+  name           = "aws-example"
   aws_access_key = var.aws_access_key
   aws_secret_key = var.aws_secret_key
 }

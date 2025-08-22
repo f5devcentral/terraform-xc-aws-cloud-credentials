@@ -11,7 +11,7 @@ provider "aws" {
 
 module "aws_creds" {
   source = "../.."
-  name   = "aws-tf-demo-creds"
+  name   = "aws-example"
 
   create_aws_tgw_iam        = true
   create_direct_connect_iam = true

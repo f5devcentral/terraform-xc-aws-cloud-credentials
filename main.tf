@@ -1,5 +1,7 @@
 locals {
   create_iam_user = var.aws_access_key == null || var.aws_secret_key == null
+  access_key      = local.create_iam_user ? aws_iam_access_key.this[0].id : var.aws_access_key
+  secret_key      = local.create_iam_user ? aws_iam_access_key.this[0].secret : var.aws_secret_key
 }
 
 resource "aws_iam_user" "this" {
@@ -12,10 +14,7 @@ resource "aws_iam_user" "this" {
 resource "aws_iam_access_key" "this" {
   count = local.create_iam_user ? 1 : 0
 
-  user = local.create_iam_user ? aws_iam_user.this[0].name : null
-  depends_on = [ 
-    aws_iam_user.this[0]
-  ]
+  user = aws_iam_user.this[0].name
 }
 
 resource "aws_iam_policy" "tgw_site" {
@@ -26,28 +25,20 @@ resource "aws_iam_policy" "tgw_site" {
   policy      = data.aws_iam_policy_document.tgw_site.json
 
   tags = var.tags
-
-  depends_on = [ 
-    aws_iam_user.this[0]
-  ]
 }
 
 resource "aws_iam_user_policy_attachment" "tgw_site" {
   count = local.create_iam_user && var.create_aws_tgw_iam ? 1 : 0
 
-  user       = local.create_iam_user ? aws_iam_user.this[0].name : null
+  user       = aws_iam_user.this[0].name
   policy_arn = aws_iam_policy.tgw_site[0].arn
-
-  depends_on = [ 
-    aws_iam_policy.tgw_site[0]
-  ]
 }
 
 data "aws_iam_policy_document" "tgw_site" {
   version = "2012-10-17"
   statement {
-    sid     = "EC2TGWPermissions"
-    effect  = "Allow"
+    sid    = "EC2TGWPermissions"
+    effect = "Allow"
     actions = [
       "ec2:AcceptTransitGatewayVpcAttachment",
       "ec2:AssociateTransitGatewayRouteTable",
@@ -75,6 +66,7 @@ data "aws_iam_policy_document" "tgw_site" {
       "ec2:EnableTransitGatewayRouteTablePropagation",
       "ec2:GetTransitGatewayRouteTableAssociations",
       "ec2:GetTransitGatewayRouteTablePropagations",
+      "ec2:ModifyTransitGateway",
       "ec2:ModifyTransitGatewayVpcAttachment",
       "ec2:SearchTransitGatewayRoutes"
     ]
@@ -90,28 +82,20 @@ resource "aws_iam_policy" "directconnect" {
   policy      = data.aws_iam_policy_document.directconnect.json
 
   tags = var.tags
-
-  depends_on = [ 
-    aws_iam_user.this[0]
-  ]
 }
 
 resource "aws_iam_user_policy_attachment" "directconnect" {
   count = local.create_iam_user && var.create_direct_connect_iam ? 1 : 0
 
-  user       = local.create_iam_user ? aws_iam_user.this[0].name : null
+  user       = aws_iam_user.this[0].name
   policy_arn = aws_iam_policy.directconnect[0].arn
-
-  depends_on = [ 
-    aws_iam_policy.directconnect[0]
-  ]
 }
 
 data "aws_iam_policy_document" "directconnect" {
   version = "2012-10-17"
   statement {
-    sid     = "DirectConnectPermissions"
-    effect  = "Allow"
+    sid    = "DirectConnectPermissions"
+    effect = "Allow"
     actions = [
       "directconnect:AllocateHostedConnection",
       "directconnect:AllocatePrivateVirtualInterface",
@@ -150,12 +134,8 @@ data "aws_iam_policy_document" "directconnect" {
 resource "aws_iam_user_policy_attachment" "vpc_site" {
   count = local.create_iam_user ? 1 : 0
 
-  user       = local.create_iam_user ? aws_iam_user.this[0].name : null
+  user       = aws_iam_user.this[0].name
   policy_arn = aws_iam_policy.vpc_site[0].arn
-
-  depends_on = [ 
-    aws_iam_policy.vpc_site[0]
-  ]
 }
 
 resource "aws_iam_policy" "vpc_site" {
@@ -166,17 +146,13 @@ resource "aws_iam_policy" "vpc_site" {
   policy      = data.aws_iam_policy_document.vpc_site.json
 
   tags = var.tags
-
-  depends_on = [ 
-    aws_iam_user.this[0]
-  ]
 }
 
 data "aws_iam_policy_document" "vpc_site" {
   version = "2012-10-17"
   statement {
-    sid     = "AutoScalingPermissions"
-    effect  = "Allow"
+    sid    = "AutoScalingPermissions"
+    effect = "Allow"
     actions = [
       "autoscaling:AttachLoadBalancerTargetGroups",
       "autoscaling:AttachLoadBalancers",
@@ -188,19 +164,21 @@ data "aws_iam_policy_document" "vpc_site" {
       "autoscaling:DescribeLaunchConfigurations",
       "autoscaling:DescribeLoadBalancerTargetGroups",
       "autoscaling:DescribeLoadBalancers",
+      "autoscaling:DescribeScalingActivities",
+      "autoscaling:DescribeTags",
       "autoscaling:DetachLoadBalancerTargetGroups",
       "autoscaling:DetachLoadBalancers",
       "autoscaling:DisableMetricsCollection",
       "autoscaling:EnableMetricsCollection",
       "autoscaling:ResumeProcesses",
       "autoscaling:SuspendProcesses",
-      "autoscaling:UpdateAutoScalingGroup",
+      "autoscaling:UpdateAutoScalingGroup"
     ]
     resources = ["*"]
   }
   statement {
-    sid     = "EC2Permissions"
-    effect  = "Allow"
+    sid    = "EC2Permissions"
+    effect = "Allow"
     actions = [
       "ec2:AllocateAddress",
       "ec2:AssignPrivateIpAddresses",
@@ -241,6 +219,7 @@ data "aws_iam_policy_document" "vpc_site" {
       "ec2:DeleteVpnGateway",
       "ec2:DescribeAccountAttributes",
       "ec2:DescribeAddresses",
+      "ec2:DescribeAddressesAttribute",
       "ec2:DescribeClientVpnConnections",
       "ec2:DescribeClientVpnEndpoints",
       "ec2:DescribeCustomerGateways",
@@ -255,6 +234,7 @@ data "aws_iam_policy_document" "vpc_site" {
       "ec2:DescribeNetworkInterfaces",
       "ec2:DescribeRouteTables",
       "ec2:DescribeSecurityGroups",
+      "ec2:DescribeSecurityGroupRules",
       "ec2:DescribeSubnets",
       "ec2:DescribeTags",
       "ec2:DescribeVolumes",
@@ -297,14 +277,24 @@ data "aws_iam_policy_document" "vpc_site" {
       "ec2:StopInstances",
       "ec2:TerminateInstances",
       "ec2:UnassignPrivateIpAddresses",
-      "ec2:UnmonitorInstances"
+      "ec2:UnmonitorInstances",
+      "ec2:DescribeRegions",
+      "ec2:DescribeAvailabilityZones",
+      "ec2:DescribeInstanceTypeOfferings",
+      "ec2:CreateLaunchTemplate",
+      "ec2:CreateLaunchTemplateVersion",
+      "ec2:DescribeLaunchTemplates",
+      "ec2:DescribeLaunchTemplateVersions",
+      "ec2:ModifyLaunchTemplate",
+      "ec2:DeleteLaunchTemplate",
+      "ec2:DeleteLaunchTemplateVersions"
     ]
     resources = ["*"]
   }
 
   statement {
-    sid     = "ELBPermissions"
-    effect  = "Allow"
+    sid    = "ELBPermissions"
+    effect = "Allow"
     actions = [
       "elasticloadbalancing:AddTags",
       "elasticloadbalancing:CreateListener",
@@ -316,6 +306,7 @@ data "aws_iam_policy_document" "vpc_site" {
       "elasticloadbalancing:DeregisterTargets",
       "elasticloadbalancing:DescribeInstanceHealth",
       "elasticloadbalancing:DescribeListeners",
+      "elasticloadbalancing:DescribeListenerAttributes",
       "elasticloadbalancing:DescribeLoadBalancerAttributes",
       "elasticloadbalancing:DescribeLoadBalancers",
       "elasticloadbalancing:DescribeTags",
@@ -327,13 +318,13 @@ data "aws_iam_policy_document" "vpc_site" {
       "elasticloadbalancing:ModifyTargetGroup",
       "elasticloadbalancing:ModifyTargetGroupAttributes",
       "elasticloadbalancing:RegisterTargets",
-      "elasticloadbalancing:RemoveTags",
+      "elasticloadbalancing:RemoveTags"
     ]
     resources = ["*"]
   }
-    statement {
-    sid     = "IAMPermissions"
-    effect  = "Allow"
+  statement {
+    sid    = "IAMPermissions"
+    effect = "Allow"
     actions = [
       "iam:AddRoleToInstanceProfile",
       "iam:AttachRolePolicy",
@@ -360,6 +351,8 @@ data "aws_iam_policy_document" "vpc_site" {
       "iam:PassRole",
       "iam:PutRolePermissionsBoundary",
       "iam:RemoveRoleFromInstanceProfile",
+      "iam:TagPolicy",
+      "iam:TagInstanceProfile",
       "iam:TagRole",
       "iam:UpdateAssumeRolePolicy",
       "iam:UpdateRole",
@@ -373,10 +366,10 @@ resource "volterra_cloud_credentials" "this" {
   name      = var.name
   namespace = "system"
   aws_secret_key {
-    access_key = local.create_iam_user ? aws_iam_access_key.this[0].id : var.aws_access_key
+    access_key = local.access_key
     secret_key {
       clear_secret_info {
-        url = "string:///${base64encode(local.create_iam_user ? aws_iam_access_key.this[0].secret : var.aws_secret_key)}"
+        url = "string:///${base64encode(local.secret_key)}"
       }
     }
   }
