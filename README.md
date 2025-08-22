@@ -2,6 +2,8 @@
 
 This Terraform module creates and manages AWS Cloud Credentials in F5 Distributed Cloud (XC). The module can either create new AWS IAM resources (user, policies, access keys) or use existing AWS credentials to establish cloud credentials in XC.
 
+> **Note**: This module is developed and maintained by the [F5 DevCentral](https://github.com/f5devcentral) community. You can use this module as an example for your own development projects.
+
 ## Features
 
 - **Flexible credential management**: Use existing AWS credentials or create new IAM user automatically
